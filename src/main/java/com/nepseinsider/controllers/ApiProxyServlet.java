@@ -13,85 +13,81 @@ import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * ApiProxyServlet
- * ----------------------------------------------------------------------
- * Server-side proxy for the live NEPSE API. Solves two problems:
- *   1. Avoids browser CORS errors (JS can't hit the Heroku endpoint
- *      directly from localhost).
- *   2. Caches the upstream response for {@link #CACHE_TTL_MS} so we
- *      don't hammer the public API on every page refresh.
+ * --------------------------------------------------------------------
+ * Server-side proxy for the live NEPSE API.
+ *   GET /api-proxy/stocks  ->  https://nepse-40e276f8ff9b.herokuapp.com/api/stocks
  *
- * Endpoint: GET /api-proxy/stocks
- * Returns:  application/json (the upstream JSON, untouched)
+ * Solves browser CORS and adds a 30-second in-memory cache so repeated
+ * page loads don't hammer the upstream service.
  */
-@WebServlet("/api-proxy/stocks")
+@WebServlet("/api-proxy/*")
 public class ApiProxyServlet extends HttpServlet {
 
-    private static final String UPSTREAM_URL =
-            "https://nepse-40e276f8ff9b.herokuapp.com/api/stocks";
+    private static final String UPSTREAM_BASE =
+            "https://nepse-40e276f8ff9b.herokuapp.com/api/";
+    private static final long   CACHE_TTL_MS  = 30_000L;
 
-    /** How long to keep the cached response before refetching. */
-    private static final long CACHE_TTL_MS = 30_000L;
+    private static final Map<String, CacheEntry> CACHE = new ConcurrentHashMap<>();
 
-    /** In-memory cache (single instance, thread-safe via volatile). */
-    private static volatile String  cachedBody  = null;
-    private static volatile long    cachedAt    = 0L;
+    private static final class CacheEntry {
+        final String body;
+        final long   savedAt;
+        CacheEntry(String body, long savedAt) {
+            this.body = body; this.savedAt = savedAt;
+        }
+    }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
-        resp.setContentType("application/json;charset=UTF-8");
-        resp.setHeader("Cache-Control", "public, max-age=30");
-
-        String body = getCachedOrFetch();
-
-        if (body == null) {
-            resp.setStatus(HttpServletResponse.SC_BAD_GATEWAY);
-            try (PrintWriter out = resp.getWriter()) {
-                out.write("{\"error\":\"Upstream NEPSE API is unreachable.\"}");
-            }
+        String path = req.getPathInfo();
+        if (path == null || path.length() < 2) {
+            sendError(resp, 400, "endpoint required, e.g. /api-proxy/stocks");
+            return;
+        }
+        String endpoint = path.substring(1).replaceAll("[^A-Za-z0-9_-]", "");
+        if (endpoint.isEmpty()) {
+            sendError(resp, 400, "invalid endpoint");
             return;
         }
 
-        try (PrintWriter out = resp.getWriter()) {
-            out.write(body);
+        resp.setContentType("application/json;charset=UTF-8");
+        resp.setHeader("Cache-Control", "public, max-age=30");
+
+        String body = getCachedOrFetch(endpoint);
+        if (body == null) {
+            sendError(resp, 502, "Upstream NEPSE API unreachable.");
+            return;
         }
+        try (PrintWriter out = resp.getWriter()) { out.write(body); }
     }
 
-    /**
-     * Returns the cached upstream body if still fresh, otherwise refetches.
-     * On fetch failure, returns the stale cache if we have one (graceful
-     * degradation), or null.
-     */
-    private String getCachedOrFetch() {
+    private String getCachedOrFetch(String endpoint) {
         long now = System.currentTimeMillis();
-        if (cachedBody != null && (now - cachedAt) < CACHE_TTL_MS) {
-            return cachedBody;
-        }
+        CacheEntry e = CACHE.get(endpoint);
+        if (e != null && (now - e.savedAt) < CACHE_TTL_MS) return e.body;
 
         try {
-            String fresh = fetchUpstream();
+            String fresh = fetchUpstream(endpoint);
             if (fresh != null && !fresh.isEmpty()) {
-                cachedBody = fresh;
-                cachedAt   = now;
+                CACHE.put(endpoint, new CacheEntry(fresh, now));
+                return fresh;
             }
-            return cachedBody;
-        } catch (Exception e) {
-            // Network failure — fall back to whatever we last had
-            System.err.println("[ApiProxy] Upstream fetch failed: " + e.getMessage());
-            return cachedBody;
+        } catch (Exception ex) {
+            System.err.println("[ApiProxy] " + ex.getMessage());
         }
+        return e == null ? null : e.body;   // graceful stale fallback
     }
 
-    /**
-     * Performs the actual HTTPS request to the NEPSE API.
-     * Uses HttpURLConnection (built into the JDK — no extra libraries).
-     */
-    private String fetchUpstream() throws IOException {
-        HttpURLConnection conn = (HttpURLConnection) new URL(UPSTREAM_URL).openConnection();
+    private String fetchUpstream(String endpoint) throws IOException {
+        URL url = new URL(UPSTREAM_BASE + endpoint);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
         conn.setRequestProperty("Accept", "application/json");
         conn.setRequestProperty("User-Agent", "NepseInsiderJSP/1.0");
@@ -99,22 +95,22 @@ public class ApiProxyServlet extends HttpServlet {
         conn.setReadTimeout(12000);
 
         int status = conn.getResponseCode();
-        if (status != 200) {
-            conn.disconnect();
-            throw new IOException("Upstream returned HTTP " + status);
-        }
+        if (status != 200) { conn.disconnect(); throw new IOException("Upstream HTTP " + status); }
 
         StringBuilder sb = new StringBuilder(64 * 1024);
         try (BufferedReader br = new BufferedReader(
                 new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-            char[] buf = new char[4096];
-            int n;
-            while ((n = br.read(buf)) != -1) {
-                sb.append(buf, 0, n);
-            }
-        } finally {
-            conn.disconnect();
-        }
+            char[] buf = new char[4096]; int n;
+            while ((n = br.read(buf)) != -1) sb.append(buf, 0, n);
+        } finally { conn.disconnect(); }
         return sb.toString();
+    }
+
+    private void sendError(HttpServletResponse resp, int status, String msg) throws IOException {
+        resp.setStatus(status);
+        resp.setContentType("application/json;charset=UTF-8");
+        try (PrintWriter out = resp.getWriter()) {
+            out.write("{\"error\":\"" + msg.replace("\"", "\\\"") + "\"}");
+        }
     }
 }

@@ -765,3 +765,184 @@ tr:hover { background: #fafbfd; }
 }
 .hero h1 { color: #ffd700; font-size: 28px; margin-bottom: 8px; }
 .hero p  { color: #c4ccd7; font-size: 15px; max-width: 600px; }
+
+
+/* =====================================================================
+   NepseInsider v3 — APPEND these rules to the END of your existing style.css
+   (Don't replace — just paste at the bottom.)
+   ===================================================================== */
+
+/* ---------- Ticker: sector indices style ---------- */
+.tk-count {
+    color: #94a0b0;
+    font-size: 12px;
+    font-weight: 500;
+    margin: 0 4px;
+}
+
+/* ---------- Pulse head (badge alignment) ---------- */
+.pulse-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+.pulse-head h2 { margin: 0; }
+
+/* ---------- Sentiment voting widget (used on stock detail pages) ---------- */
+.vote-widget {
+    background: #fff;
+    border: 1px solid #e7eaf0;
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin-bottom: 20px;
+}
+.vote-widget h3 {
+    font-size: 16px;
+    margin-bottom: 4px;
+}
+.vote-widget p {
+    color: #6c7886;
+    font-size: 13px;
+    margin-bottom: 16px;
+}
+.vote-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+.vote-btn {
+    flex: 1;
+    padding: 14px 18px;
+    border: 2px solid #e7eaf0;
+    background: #fafbfd;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.vote-btn:hover { transform: translateY(-2px); }
+.vote-btn.bullish { color: #16a34a; }
+.vote-btn.bullish:hover,
+.vote-btn.bullish.active {
+    background: #dcf5e4;
+    border-color: #16a34a;
+    box-shadow: 0 4px 14px rgba(46, 204, 113, 0.25);
+}
+.vote-btn.bearish { color: #dc2626; }
+.vote-btn.bearish:hover,
+.vote-btn.bearish.active {
+    background: #fde2e1;
+    border-color: #dc2626;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.22);
+}
+.vote-result {
+    font-size: 12px;
+    color: #94a0b0;
+    margin-top: 4px;
+    text-align: center;
+}
+
+/* ---------- Comments thread ---------- */
+.comments-card {
+    background: #fff;
+    border: 1px solid #e7eaf0;
+    border-radius: 14px;
+    padding: 22px 24px;
+    margin-bottom: 20px;
+}
+.comments-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+.comments-head h3 { margin: 0; font-size: 17px; }
+.comments-count {
+    color: #6c7886;
+    font-size: 13px;
+}
+
+.comment-form {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid #f0f2f7;
+}
+.comment-form textarea {
+    flex: 1;
+    padding: 11px 13px;
+    border: 1px solid #d8dde6;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 60px;
+    background: #fafbfd;
+}
+.comment-form textarea:focus {
+    outline: none;
+    border-color: #2ecc71;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(46,204,113,0.12);
+}
+
+.comment-list { list-style: none; padding: 0; margin: 0; }
+.comment-item {
+    padding: 14px 0;
+    border-bottom: 1px solid #f5f7fb;
+}
+.comment-item:last-child { border-bottom: none; }
+.comment-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 13px;
+}
+.comment-author {
+    font-weight: 700;
+    color: #0d1320;
+}
+.comment-time {
+    color: #94a0b0;
+    font-size: 12px;
+}
+.comment-body {
+    color: #1a1f2e;
+    font-size: 14px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.comment-empty {
+    text-align: center;
+    color: #94a0b0;
+    padding: 30px 10px;
+    font-style: italic;
+    font-size: 14px;
+}
+.comment-login-prompt {
+    background: #f5f7fb;
+    border: 1px dashed #d8dde6;
+    border-radius: 10px;
+    padding: 14px 18px;
+    text-align: center;
+    color: #6c7886;
+    font-size: 14px;
+    margin-bottom: 18px;
+}
+.comment-login-prompt a { font-weight: 700; }
+
+/* ---------- Mobile tweaks for new bits ---------- */
+@media (max-width: 600px) {
+    .vote-buttons { flex-direction: column; }
+    .comment-form { flex-direction: column; }
+}

@@ -13,7 +13,7 @@
     <a href="${pageContext.request.contextPath}/home" class="logo">NepseInsider</a>
     <ul>
         <li><a href="${pageContext.request.contextPath}/home">Home</a></li>
-        <li><a href="${pageContext.request.contextPath}/stocks">Stocks</a></li>
+        <li><a href="${pageContext.request.contextPath}/live-stocks">Stocks</a></li>
         <c:choose>
             <c:when test="${sessionScope.user == null}">
                 <li><a href="${pageContext.request.contextPath}/login">Login</a></li>
