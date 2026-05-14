@@ -3,5 +3,6 @@
 <footer class="footer">
     &copy; 2026 NepseInsider &mdash; Nepal Stock Exchange Insights Platform
 </footer>
+<script src="${pageContext.request.contextPath}/js/polish.js"></script>
 </body>
 </html>

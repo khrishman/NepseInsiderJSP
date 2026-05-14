@@ -1,0 +1,273 @@
+/* =====================================================================
+   NepseInsider — Visual Polish Layer
+   ---------------------------------------------------------------------
+   Drop-in enhancement file. Link this AFTER style.css in header.jsp.
+   Pure CSS animations — no library, no framework.
+   To disable everything: just remove the <link> tag. Nothing breaks.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   0. Respect user motion preferences (accessibility)
+   --------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ---------------------------------------------------------------------
+   1. Page load — staggered fade-in for cards and sections
+   --------------------------------------------------------------------- */
+@keyframes np-fade-up {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Apply to the main content blocks. The nth-child stagger makes them
+   cascade in one after another instead of all at once. */
+.card,
+.market-stats,
+.movers-grid,
+.pulse-section,
+.vote-widget,
+.comments-card,
+.stat-tile,
+.mover-card,
+.cta-band,
+.hero-stage {
+    animation: np-fade-up 0.5s ease both;
+}
+
+/* Stagger: each major section starts slightly later */
+.hero-stage          { animation-delay: 0.00s; }
+.ticker-strip        { animation-delay: 0.05s; }
+.market-stats        { animation-delay: 0.10s; }
+.movers-grid         { animation-delay: 0.16s; }
+.pulse-section       { animation-delay: 0.22s; }
+.cta-band            { animation-delay: 0.28s; }
+
+/* Within the market-stats grid, stagger each tile */
+.market-stats .stat-tile:nth-child(1) { animation-delay: 0.12s; }
+.market-stats .stat-tile:nth-child(2) { animation-delay: 0.18s; }
+.market-stats .stat-tile:nth-child(3) { animation-delay: 0.24s; }
+.market-stats .stat-tile:nth-child(4) { animation-delay: 0.30s; }
+
+/* Within movers grid, stagger each card */
+.movers-grid .mover-card:nth-child(1) { animation-delay: 0.18s; }
+.movers-grid .mover-card:nth-child(2) { animation-delay: 0.26s; }
+.movers-grid .mover-card:nth-child(3) { animation-delay: 0.34s; }
+
+/* Stock detail KPI tiles stagger */
+.detail-grid              { animation: np-fade-up 0.5s ease both; animation-delay: 0.20s; }
+
+/* ---------------------------------------------------------------------
+   2. Sentiment meter — smooth animated fill + shimmer
+   --------------------------------------------------------------------- */
+
+/* The fill bars slide smoothly to their width instead of snapping.
+   (Your inline style sets the width; this just animates the change.) */
+.meter-fill {
+    transition: width 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Gradient upgrade — richer than flat colour */
+.meter-fill.bullish {
+    background: linear-gradient(90deg, #15803d, #22c55e, #16a34a);
+    background-size: 200% 100%;
+    animation: np-gradient-drift 4s ease infinite;
+}
+.meter-fill.bearish {
+    background: linear-gradient(90deg, #b91c1c, #ef4444, #dc2626);
+    background-size: 200% 100%;
+    animation: np-gradient-drift 4s ease infinite;
+}
+@keyframes np-gradient-drift {
+    0%, 100% { background-position: 0% 50%; }
+    50%      { background-position: 100% 50%; }
+}
+
+/* Moving shimmer sweep across each fill bar */
+.meter-fill::after {
+    content: "";
+    position: absolute;
+    top: 0; left: -60%;
+    width: 60%; height: 100%;
+    background: linear-gradient(90deg,
+        transparent, rgba(255,255,255,0.35), transparent);
+    animation: np-shimmer 2.6s ease-in-out infinite;
+}
+@keyframes np-shimmer {
+    0%   { left: -60%; }
+    60%  { left: 130%; }
+    100% { left: 130%; }
+}
+
+/* Soft glow on the meter bar container */
+.meter-bar {
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.10),
+                0 0 0 1px rgba(0,0,0,0.03);
+    transition: box-shadow 0.3s ease;
+}
+
+/* When a vote just landed, the whole widget gives a quick pulse.
+   JS adds the .np-just-voted class for ~700ms. */
+@keyframes np-vote-pulse {
+    0%   { transform: scale(1); }
+    35%  { transform: scale(1.015); }
+    100% { transform: scale(1); }
+}
+.vote-widget.np-just-voted {
+    animation: np-vote-pulse 0.7s ease;
+}
+.vote-widget.np-just-voted .meter-bar {
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.10),
+                0 0 0 3px rgba(46, 204, 113, 0.35);
+}
+
+/* ---------------------------------------------------------------------
+   3. Vote buttons — press / lift micro-interactions
+   --------------------------------------------------------------------- */
+.vote-btn {
+    transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.18s ease,
+                background 0.18s ease,
+                border-color 0.18s ease;
+}
+.vote-btn:hover    { transform: translateY(-3px); }
+.vote-btn:active   { transform: translateY(-1px) scale(0.98); }
+
+/* When this button IS the user's active vote, give it a gentle breathing glow */
+.vote-btn.active.bullish {
+    animation: np-glow-green 2.4s ease-in-out infinite;
+}
+.vote-btn.active.bearish {
+    animation: np-glow-red 2.4s ease-in-out infinite;
+}
+@keyframes np-glow-green {
+    0%, 100% { box-shadow: 0 4px 14px rgba(46, 204, 113, 0.25); }
+    50%      { box-shadow: 0 4px 22px rgba(46, 204, 113, 0.50); }
+}
+@keyframes np-glow-red {
+    0%, 100% { box-shadow: 0 4px 14px rgba(220, 38, 38, 0.22); }
+    50%      { box-shadow: 0 4px 22px rgba(220, 38, 38, 0.45); }
+}
+
+/* ---------------------------------------------------------------------
+   4. Generic buttons — consistent lift everywhere
+   --------------------------------------------------------------------- */
+.btn {
+    transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1),
+                box-shadow 0.18s ease,
+                background 0.18s ease;
+}
+.btn:hover  { transform: translateY(-2px); }
+.btn:active { transform: translateY(0) scale(0.98); }
+
+/* ---------------------------------------------------------------------
+   5. Stat tiles + mover cards — richer hover
+   --------------------------------------------------------------------- */
+.stat-tile, .mover-card, .feature-card, .pulse-card {
+    transition: transform 0.2s ease,
+                box-shadow 0.2s ease,
+                border-color 0.2s ease;
+}
+.stat-tile:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.10);
+}
+.mover-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.12);
+}
+
+/* Mover table rows — slide highlight on hover */
+.mover-table tr {
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+.mover-table tbody tr:hover {
+    background: #f3f8f5;
+    transform: translateX(3px);
+}
+
+/* Generic table rows (stocks list) */
+.table-wrap table tbody tr {
+    transition: background 0.14s ease;
+}
+
+/* ---------------------------------------------------------------------
+   6. Loading shimmer — replaces plain "Loading..." text
+   --------------------------------------------------------------------- */
+.np-shimmer-text {
+    background: linear-gradient(90deg,
+        #c4ccd7 25%, #eef1f5 50%, #c4ccd7 75%);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+            background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: np-text-shimmer 1.4s linear infinite;
+}
+@keyframes np-text-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* The loading cells / empty states get the shimmer automatically */
+.loading-cell, .comment-empty, .ticker-loading {
+    background: linear-gradient(90deg,
+        #c4ccd7 25%, #eef1f5 50%, #c4ccd7 75%);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+            background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: np-text-shimmer 1.4s linear infinite;
+}
+
+/* ---------------------------------------------------------------------
+   7. Ticker tape — slight speed-up on hover-pause for readability
+   --------------------------------------------------------------------- */
+.ticker-strip:hover .ticker-track {
+    animation-play-state: paused;
+}
+
+/* ---------------------------------------------------------------------
+   8. Hero badge dot — already pulses; add a soft halo
+   --------------------------------------------------------------------- */
+.hero-badge .dot {
+    position: relative;
+}
+.hero-badge .dot::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    border: 1px solid rgba(46, 204, 113, 0.4);
+    animation: np-halo 1.8s ease-out infinite;
+}
+@keyframes np-halo {
+    0%   { transform: scale(0.8); opacity: 0.8; }
+    100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* ---------------------------------------------------------------------
+   9. Comment items — fade in as they're added
+   --------------------------------------------------------------------- */
+.comment-item {
+    animation: np-fade-up 0.35s ease both;
+}
+
+/* ---------------------------------------------------------------------
+   10. Count-up numbers — the JS adds .np-counting while animating;
+       this just keeps them tabular so they don't jitter width.
+   --------------------------------------------------------------------- */
+.stat-value, #voteBullLbl, #voteBearLbl, .stat-value[data-val] {
+    font-variant-numeric: tabular-nums;
+}
+
+/* Section heading underline grow-in */
+.section-title, .section-title-left {
+    position: relative;
+}
